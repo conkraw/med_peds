@@ -16,18 +16,36 @@ st.caption(f"Today's date: {TODAY_STR}")
 # ----------------------------
 # Helper functions
 # ----------------------------
-def replace_simple_text(paragraph, replacements: dict):
+def replace_simple_text(
+    paragraph,
+    replacements: dict,
+    font_name: str = "Times New Roman",
+    font_size_pt: int = 11,
+):
     if not paragraph.text:
         return
 
     full_text = paragraph.text
     new_text = full_text
+
     for old, new in replacements.items():
         new_text = new_text.replace(old, new)
 
-    if new_text != full_text:
-        paragraph.clear()
-        paragraph.add_run(new_text)
+    if new_text == full_text:
+        return
+
+    paragraph.clear()
+    run = paragraph.add_run(new_text)
+
+    # Force font + size
+    run.font.name = font_name
+    run.font.size = Pt(font_size_pt)
+
+    # Ensure Word actually honors the font
+    run._element.rPr.rFonts.set(qn("w:ascii"), font_name)
+    run._element.rPr.rFonts.set(qn("w:hAnsi"), font_name)
+    run._element.rPr.rFonts.set(qn("w:cs"), font_name)
+    run._element.rPr.rFonts.set(qn("w:eastAsia"), font_name)
 
 def replace_everywhere(doc: Document, replacements: dict):
     for p in doc.paragraphs:
