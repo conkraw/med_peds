@@ -6,20 +6,16 @@ from docx import Document
 
 st.set_page_config(page_title="CCC Letter Generator", layout="centered")
 
-TODAY_STR = date.today().strftime("%B %d, %Y")  # e.g., December 18, 2025
+TODAY_STR = date.today().strftime("%B %d, %Y")
 
 st.title("CCC Letter Generator")
 st.caption(f"Today's date: {TODAY_STR}")
 
 # ----------------------------
-# Helpers
+# Helper functions
 # ----------------------------
-def _replace_in_paragraph(paragraph, replacements: dict):
-    """
-    Robust-ish text replacement that works even if Word split the placeholder across runs.
-    Keeps formatting of the first run, but may flatten mixed formatting within the paragraph.
-    """
-    if paragraph is None or paragraph.text is None:
+def replace_simple_text(paragraph, replacements: dict):
+    if not paragraph.text:
         return
 
     full_text = paragraph.text
@@ -27,99 +23,113 @@ def _replace_in_paragraph(paragraph, replacements: dict):
     for old, new in replacements.items():
         new_text = new_text.replace(old, new)
 
-    if new_text == full_text:
-        return
-
-    # If there are runs, keep formatting of first run, clear the rest
-    if paragraph.runs:
-        paragraph.runs[0].text = new_text
-        for r in paragraph.runs[1:]:
-            r.text = ""
-    else:
+    if new_text != full_text:
+        paragraph.clear()
         paragraph.add_run(new_text)
 
-def _replace_everywhere(doc: Document, replacements: dict):
-    # Body paragraphs
+def replace_everywhere(doc: Document, replacements: dict):
     for p in doc.paragraphs:
-        _replace_in_paragraph(p, replacements)
+        replace_simple_text(p, replacements)
 
-    # Tables
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 for p in cell.paragraphs:
-                    _replace_in_paragraph(p, replacements)
+                    replace_simple_text(p, replacements)
 
-    # Headers/footers
     for section in doc.sections:
-        header = section.header
-        footer = section.footer
-        for p in header.paragraphs:
-            _replace_in_paragraph(p, replacements)
-        for p in footer.paragraphs:
-            _replace_in_paragraph(p, replacements)
+        for p in section.header.paragraphs:
+            replace_simple_text(p, replacements)
+        for p in section.footer.paragraphs:
+            replace_simple_text(p, replacements)
 
-def _insert_date_at_top(doc: Document, date_line: str):
-    # Insert as first paragraph if possible
+def insert_date_at_top(doc: Document, date_line: str):
     if doc.paragraphs:
         doc.paragraphs[0].insert_paragraph_before(date_line)
     else:
         doc.add_paragraph(date_line)
 
+def replace_ccc_text_block(doc: Document, replacement_text: str):
+    """
+    Replaces the paragraph containing CCC_TEXT with
+    multiple paragraphs based on textarea newlines.
+    """
+    blocks = [line.strip() for line in replacement_text.split("\n") if line.strip()]
+
+    for i, p in enumerate(doc.paragraphs):
+        if "CCC_TEXT" in p.text:
+            parent = p._p.getparent()
+            idx = parent.index(p._p)
+
+            # remove placeholder paragraph
+            parent.remove(p._p)
+
+            # insert new paragraphs at same location
+            for offset, block in enumerate(blocks):
+                new_p = Document().add_paragraph(block)._p
+                parent.insert(idx + offset, new_p)
+            return
+
 # ----------------------------
 # UI
 # ----------------------------
 with st.form("inputs"):
-    name = st.text_input("Person's name (e.g., Jane Smith)", value="")
+    name = st.text_input("Person's name (e.g., Jane Smith)")
     month = st.selectbox(
         "Month",
         ["January","February","March","April","May","June","July","August",
          "September","October","November","December"],
         index=date.today().month - 1,
     )
-    year = st.number_input("Year", min_value=2000, max_value=2100, value=date.today().year, step=1)
+    year = st.number_input("Year", min_value=2000, max_value=2100,
+                           value=date.today().year, step=1)
 
-    template_file = st.file_uploader("Upload your Word template (.docx)", type=["docx"])
+    ccc_text = st.text_area(
+        "CCC personalized paragraph(s)",
+        height=220,
+        help="Line breaks will be preserved as separate paragraphs in Word."
+    )
+
+    template_file = st.file_uploader("Upload Word template (.docx)", type=["docx"])
     submitted = st.form_submit_button("Generate Word Document")
 
+# ----------------------------
+# Generate document
+# ----------------------------
 if submitted:
-    if not template_file:
-        st.error("Please upload a .docx template.")
-        st.stop()
-    if not name.strip():
-        st.error("Please enter the person's name.")
+    if not template_file or not name.strip() or not ccc_text.strip():
+        st.error("Please complete all required fields and upload a template.")
         st.stop()
 
     month_year = f"{month} {int(year)}"
 
-    # Load template into python-docx
-    template_bytes = BytesIO(template_file.read())
-    doc = Document(template_bytes)
+    doc = Document(BytesIO(template_file.read()))
 
-    # Insert date line at very top (optional but per your request)
-    #_insert_date_at_top(doc, TODAY_STR)
+    # Simple placeholder replacements
+    replace_everywhere(
+        doc,
+        {
+            "xxx": name.strip(),
+            "Date": TODAY_STR,
+            "Month of Year": month_year,
+            "Month of  Year": month_year,
+        }
+    )
 
-    # Replace placeholders
-    replacements = {
-        "xxx": name.strip(),
-        "Date": TODAY_STR,
-        "Month of Year": month_year,
-        "Month of  Year": month_year,  # common double-space typo guard
-        "Month  of Year": month_year,  # another typo guard
-    }
-    _replace_everywhere(doc, replacements)
+    # Replace CCC_TEXT block with multi-paragraph input
+    replace_ccc_text_block(doc, ccc_text)
 
-    # Save to bytes for download
+    # Output
     out = BytesIO()
     doc.save(out)
     out.seek(0)
 
-    safe_name = "".join(c for c in name.strip() if c.isalnum() or c in (" ", "_", "-")).strip().replace(" ", "_")
+    safe_name = name.strip().replace(" ", "_")
     filename = f"CCC_Letter_{safe_name}.docx"
 
-    st.success("Done! Download your generated document below.")
+    st.success("Document created successfully.")
     st.download_button(
-        label="Download Word Document",
+        "Download Word Document",
         data=out.getvalue(),
         file_name=filename,
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
