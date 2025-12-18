@@ -3,6 +3,8 @@ import streamlit as st
 from datetime import date
 from io import BytesIO
 from docx import Document
+from docx.shared import Pt
+from docx.oxml.ns import qn
 
 st.set_page_config(page_title="CCC Letter Generator", layout="centered")
 
@@ -49,34 +51,53 @@ def insert_date_at_top(doc: Document, date_line: str):
     else:
         doc.add_paragraph(date_line)
 
-def replace_ccc_text_block(doc: Document, replacement_text: str, token: str = "CCC_TEXT"):
+def replace_ccc_text_block(
+    doc: Document,
+    replacement_text: str,
+    token: str = "CCC_TEXT",
+    font_name: str = "Times New Roman",
+    font_size_pt: int = 11,
+):
     """
-    Safely replaces a paragraph that contains `token` with multiple paragraphs.
-    Preserves surrounding paragraphs (won't delete the 'After review...' paragraph).
-    Works in body + tables.
+    Replace the paragraph containing `token` with multiple paragraphs,
+    formatted as Times New Roman, 11 pt.
+    Preserves all surrounding content.
     """
-    blocks = [line.rstrip() for line in replacement_text.split("\n")]
-    blocks = [b for b in blocks if b.strip() != ""]  # drop blank lines
+
+    blocks = [line for line in replacement_text.split("\n") if line.strip()]
+
+    def _insert_formatted_paragraph(before_paragraph, text):
+        new_p = before_paragraph.insert_paragraph_before()
+        run = new_p.add_run(text)
+
+        # Font settings
+        run.font.name = font_name
+        run.font.size = Pt(font_size_pt)
+
+        # Ensure Word respects the font (important!)
+        run._element.rPr.rFonts.set(qn("w:ascii"), font_name)
+        run._element.rPr.rFonts.set(qn("w:hAnsi"), font_name)
+        run._element.rPr.rFonts.set(qn("w:cs"), font_name)
+        run._element.rPr.rFonts.set(qn("w:eastAsia"), font_name)
 
     def _process_paragraph(p):
         if token not in p.text:
             return False
 
-        # Insert each block BEFORE the placeholder paragraph
-        for b in blocks:
-            p.insert_paragraph_before(b)
+        for block in blocks:
+            _insert_formatted_paragraph(p, block)
 
-        # Remove only the placeholder paragraph itself
+        # Remove ONLY the placeholder paragraph
         parent = p._p.getparent()
         parent.remove(p._p)
         return True
 
-    # Body
+    # Body paragraphs
     for p in list(doc.paragraphs):
         if _process_paragraph(p):
             return True
 
-    # Tables (your template is not in a table, but keep for robustness)
+    # Tables (robustness)
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
@@ -85,7 +106,6 @@ def replace_ccc_text_block(doc: Document, replacement_text: str, token: str = "C
                         return True
 
     return False
-
 
 # ----------------------------
 # UI
