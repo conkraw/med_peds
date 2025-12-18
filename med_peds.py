@@ -97,7 +97,7 @@ if submitted:
     doc = Document(template_bytes)
 
     # Insert date line at very top (optional but per your request)
-    _insert_date_at_top(doc, TODAY_STR)
+    #_insert_date_at_top(doc, TODAY_STR)
 
     # Replace placeholders
     replacements = {
