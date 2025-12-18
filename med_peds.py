@@ -49,26 +49,43 @@ def insert_date_at_top(doc: Document, date_line: str):
     else:
         doc.add_paragraph(date_line)
 
-def replace_ccc_text_block(doc: Document, replacement_text: str):
+def replace_ccc_text_block(doc: Document, replacement_text: str, token: str = "CCC_TEXT"):
     """
-    Replaces the paragraph containing CCC_TEXT with
-    multiple paragraphs based on textarea newlines.
+    Safely replaces a paragraph that contains `token` with multiple paragraphs.
+    Preserves surrounding paragraphs (won't delete the 'After review...' paragraph).
+    Works in body + tables.
     """
-    blocks = [line.strip() for line in replacement_text.split("\n") if line.strip()]
+    blocks = [line.rstrip() for line in replacement_text.split("\n")]
+    blocks = [b for b in blocks if b.strip() != ""]  # drop blank lines
 
-    for i, p in enumerate(doc.paragraphs):
-        if "CCC_TEXT" in p.text:
-            parent = p._p.getparent()
-            idx = parent.index(p._p)
+    def _process_paragraph(p):
+        if token not in p.text:
+            return False
 
-            # remove placeholder paragraph
-            parent.remove(p._p)
+        # Insert each block BEFORE the placeholder paragraph
+        for b in blocks:
+            p.insert_paragraph_before(b)
 
-            # insert new paragraphs at same location
-            for offset, block in enumerate(blocks):
-                new_p = Document().add_paragraph(block)._p
-                parent.insert(idx + offset, new_p)
-            return
+        # Remove only the placeholder paragraph itself
+        parent = p._p.getparent()
+        parent.remove(p._p)
+        return True
+
+    # Body
+    for p in list(doc.paragraphs):
+        if _process_paragraph(p):
+            return True
+
+    # Tables (your template is not in a table, but keep for robustness)
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for p in list(cell.paragraphs):
+                    if _process_paragraph(p):
+                        return True
+
+    return False
+
 
 # ----------------------------
 # UI
