@@ -8,7 +8,7 @@ from docx.oxml.ns import qn
 
 st.set_page_config(page_title="CCC Letter Generator", layout="centered")
 
-TODAY_STR = date.today().strftime("%B %d, %Y")
+TODAY_STR = date.today().strftime("%B %d, %Y").replace(" 0", " ")
 
 st.title("CCC Letter Generator")
 st.caption(f"Today's date: {TODAY_STR}")
