@@ -8,8 +8,10 @@ from docx.oxml.ns import qn
 import requests
 
 TEMPLATE_URLS = {
-    "Mid-Year": "https://raw.githubusercontent.com/conkraw/med_peds/main/templates/midyear_template.docx",
-    "End-of-Year": "https://raw.githubusercontent.com/conraw/med_peds/main/templates/endofyear_template.docx",
+    "Mid-Year - No Concerns": "https://raw.githubusercontent.com/conraw/med_peds/main/templates/my_pgy1_to_4_no_concerns.docx",
+    "End-of-Year - No Concerns": "https://raw.githubusercontent.com/conkraw/med_peds/main/templates/eoy_pgy1_to_3_no_concerns.docx",
+    "Mid-Year - Concerns": "https://raw.githubusercontent.com/conraw/med_peds/main/templates/my_concerns.docx",
+    "End-of-Year - No Concerns": "https://raw.githubusercontent.com/conraw/med_peds/main/templates/eoy_pgy4.docx",
 }
 
 st.set_page_config(page_title="CCC Letter Generator", layout="centered")
@@ -151,7 +153,8 @@ with st.form("inputs"):
         help="Line breaks will be preserved as separate paragraphs in Word."
     )
 
-    template_choice = st.selectbox("Select template",["Mid-Year", "End-of-Year"])
+    template_choice = st.selectbox("Select template",["Mid-Year - No Concerns", "End-of-Year - No Concerns", "Mid-Year - Concerns", "End-of-Year - No Concerns"])
+    
     submitted = st.form_submit_button("Generate Word Document")
 
 # ----------------------------
