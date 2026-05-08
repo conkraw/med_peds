@@ -5,6 +5,12 @@ from io import BytesIO
 from docx import Document
 from docx.shared import Pt
 from docx.oxml.ns import qn
+import requests
+
+TEMPLATE_URLS = {
+    "Mid-Year": "https://raw.githubusercontent.com/conkraw/med_peds/main/templates/midyear_template.docx",
+    "End-of-Year": "https://raw.githubusercontent.com/conraw/med_peds/main/templates/endofyear_template.docx",
+}
 
 st.set_page_config(page_title="CCC Letter Generator", layout="centered")
 
@@ -145,20 +151,23 @@ with st.form("inputs"):
         help="Line breaks will be preserved as separate paragraphs in Word."
     )
 
-    template_file = st.file_uploader("Upload Word template (.docx)", type=["docx"])
+    template_choice = st.selectbox("Select template",["Mid-Year", "End-of-Year"])
     submitted = st.form_submit_button("Generate Word Document")
 
 # ----------------------------
 # Generate document
 # ----------------------------
 if submitted:
-    if not template_file or not name.strip() or not ccc_text.strip():
-        st.error("Please complete all required fields and upload a template.")
+    if not name.strip() or not ccc_text.strip():
+        st.error("Please complete all required fields.")
         st.stop()
 
     month_year = f"{month} {int(year)}"
 
-    doc = Document(BytesIO(template_file.read()))
+    template_url = TEMPLATE_URLS[template_choice]
+    response = requests.get(template_url)
+    response.raise_for_status()
+    doc = Document(BytesIO(response.content))
 
     # Simple placeholder replacements
     replace_everywhere(
