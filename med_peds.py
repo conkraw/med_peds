@@ -153,7 +153,7 @@ with st.form("inputs"):
         help="Line breaks will be preserved as separate paragraphs in Word."
     )
 
-    template_choice = st.selectbox("Select template",["Mid-Year - No Concerns", "End-of-Year - No Concerns", "Mid-Year - Concerns", "End-of-Year - No Concerns"])
+    template_choice = st.selectbox("Select template",["Mid-Year - No Concerns", "End-of-Year - No Concerns", "Mid-Year - Concerns", "End-of-Year_PGY4 - No Concerns"])
     
     submitted = st.form_submit_button("Generate Word Document")
 
