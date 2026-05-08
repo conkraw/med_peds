@@ -147,6 +147,28 @@ with st.form("inputs"):
     year = st.number_input("Year", min_value=2000, max_value=2100,
                            value=date.today().year, step=1)
 
+    if st.button("Show AI Prompt Helper"):
+        st.code(
+            '''Write a concise Clinical Competency Committee (CCC) summary paragraph in a supportive, professional tone appropriate for both resident feedback documentation and inclusion in a warm letter of support.
+
+Formatting and style requirements:
+
+Write as a single cohesive 3-sentence paragraph.
+Do not use the word “resident.”
+Begin with: “Across both Internal Medicine and Pediatrics settings,”
+Use polished narrative language similar to faculty evaluation summaries.
+Emphasize longitudinal growth, strengths, and responsiveness to feedback.
+Present strengths first, followed by developmental growth areas.
+Frame growth areas constructively and developmentally rather than critically.
+Avoid bullet points, headings, or overly harsh language.
+Highlight trajectory of improvement over time.
+End with a future-oriented statement such as “expected to continue strengthening with experience and coaching” or similar language.
+Maintain a balanced, encouraging, and professional tone throughout.
+
+Content to incorporate:
+[INSERT CONTENT HERE]''',
+            language="text"
+        )
     ccc_text = st.text_area(
         "CCC personalized paragraph(s)",
         height=220,
