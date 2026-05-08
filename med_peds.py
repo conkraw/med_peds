@@ -11,7 +11,7 @@ TEMPLATE_URLS = {
     "Mid-Year - No Concerns": "https://raw.githubusercontent.com/conkraw/med_peds/main/template/my_pgy1_to_4_no_concerns.docx",
     "End-of-Year - No Concerns": "https://raw.githubusercontent.com/conkraw/med_peds/main/template/eoy_pgy1_to_3_no_concerns.docx",
     "Mid-Year - Concerns": "https://raw.githubusercontent.com/conkraw/med_peds/main/template/my_concerns.docx",
-    "End-of-Year - No Concerns": "https://raw.githubusercontent.com/conkraw/med_peds/main/template/eoy_pgy4.docx",
+    "End-of-Year_PGY4 - No Concerns": "https://raw.githubusercontent.com/conkraw/med_peds/main/template/eoy_pgy4.docx",
 }
 
 st.set_page_config(page_title="CCC Letter Generator", layout="centered")
