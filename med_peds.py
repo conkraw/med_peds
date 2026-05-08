@@ -147,7 +147,7 @@ with st.form("inputs"):
     year = st.number_input("Year", min_value=2000, max_value=2100,
                            value=date.today().year, step=1)
 
-    if st.button("Show AI Prompt Helper"):
+    with st.expander("Show AI Prompt Helper"):
         st.code(
             '''Write a concise Clinical Competency Committee (CCC) summary paragraph in a supportive, professional tone appropriate for both resident feedback documentation and inclusion in a warm letter of support.
 
